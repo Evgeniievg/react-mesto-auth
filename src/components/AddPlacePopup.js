@@ -6,7 +6,6 @@ export default function AddPlacePopup(props) {
   const newCardTitleRef = React.useRef('')
   const newCardLinkRef = React.useRef('')
 
-
   function handleSubmit(e) {
     e.preventDefault();
     const newCardTitle = newCardTitleRef.current.value

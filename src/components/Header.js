@@ -1,10 +1,8 @@
 import React, {useState, useEffect} from 'react';
 import logo from '../images/logo.svg';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import * as auth from '../utils/auth';
 
-export const Header = ({ isLoggedIn, handleLoggedin }) => {
-  const [email, setEmail] = useState('');
+export const Header = ({ isLoggedIn, email, onSignOut }) => {
   const [burgerClicked, setBurgerClicked] = useState(false);
   const location = useLocation();
   const currentUrl = location.pathname;
@@ -14,35 +12,6 @@ export const Header = ({ isLoggedIn, handleLoggedin }) => {
   function handleBurgerClick() {
     setBurgerClicked(!burgerClicked);
   }
-
-  function signOut() {
-    localStorage.removeItem('jwt');
-    navigate('/sign-in');
-    handleLoggedin(false)
-  }
-
-  function getEmail() {
-    const jwt = localStorage.getItem('jwt');
-    auth
-      .getContent(jwt)
-      .then((data) => {
-        if (isLoggedIn) {
-          setEmail(data.data.email);
-        } else {
-          setEmail('');
-        }
-      })
-      .catch((error) => {
-        console.log('Ошибка при получении email:', error);
-      });
-  }
-
-  useEffect(() => {
-    if (currentUrl === '/') {
-      getEmail();
-    }
-  }, [currentUrl]);
-
 
   return (
     <header className={`header${burgerClicked  && isLoggedIn ? ' active-mobile' : ''}`}>
@@ -63,7 +32,7 @@ export const Header = ({ isLoggedIn, handleLoggedin }) => {
         <Link to='/sign-up' className='header__link'>Регистрация</Link> :
         currentUrl === '/sign-up' ?
         <Link to='/sign-in' className='header__link'>Войти</Link> :
-        <button onClick={signOut} className="header__button">
+        <button onClick={onSignOut} className="header__button">
           Выйти
         </button>
         }

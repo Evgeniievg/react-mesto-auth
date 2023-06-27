@@ -17,7 +17,6 @@ import ProtectedRoute from './ProtectedRoute';
 import * as auth from '../utils/auth';
 import InfoTooltip from './InfoTooltip';
 
-
 function App() {
 
   const [currentUser , setСurrentUser ] = useState({});
@@ -28,13 +27,15 @@ function App() {
   const [isLoggedIn, setLoggedIn] = useState(false);
   const [isInfoTooltip, setInfoTooltip] = useState(false);
   const [authData, setAuthData] = useState(false);
+  const [popupAuthText, setPopupAuthText] = useState('')
+  const [email, setEmail] = useState('')
   const navigate = useNavigate();
   const location = useLocation();
   const currentUrl = location.pathname;
 
-
   useEffect(() => {
-    api.getUserInfo()
+    if(isLoggedIn) {
+      api.getUserInfo()
       .then((userInfo) => {
         setСurrentUser(userInfo)
       })
@@ -46,7 +47,9 @@ function App() {
       }).catch((error) => {
          console.log('Ошибка при загрузке карточек:', error);
        });
-  }, []);
+    }
+
+  }, [isLoggedIn]);
 
   const [cards, setCards] = useState([])
 
@@ -59,25 +62,24 @@ function App() {
     }).catch((error) => console.error(`Ошибка при клике на лайк : ${error}`))
 }
 
-function handleCardDelete(card){
-  api.deleteCard(card._id).then(() => {
-    setCards((cards) => cards.filter((c) => c._id !== card._id))
-  }).catch(error => {
-    console.log('Ошибка при удалении карточки:', error);
+  function handleCardDelete(card){
+    api.deleteCard(card._id).then(() => {
+      setCards((cards) => cards.filter((c) => c._id !== card._id))
+    }).catch(error => {
+      console.log('Ошибка при удалении карточки:', error);
   });
 }
 
-function handleUpdateUser({name, about}) {
-  api.changeProfile({name, about})
-    .then(newInfo => {
-      setСurrentUser(newInfo);
-      closeAllPopups();
+  function handleUpdateUser({name, about}) {
+    api.changeProfile({name, about})
+      .then(newInfo => {
+        setСurrentUser(newInfo);
+        closeAllPopups();
     })
-    .catch(error => {
-      console.log('Ошибка при обновлении данных пользователя:', error);
+      .catch(error => {
+        console.log('Ошибка при обновлении данных пользователя:', error);
     });
 }
-
 
   function handleUpdateAvatar(avatar){
     api.changeAvatar(avatar)
@@ -87,8 +89,8 @@ function handleUpdateUser({name, about}) {
     })
     .catch(error => {
       console.log('Ошибка при обновлении аватара:', error);
-    });
-  }
+  });
+}
 
   function handleAddPlaceSubmit({name, link}){
     api.createCard({name, link}).then(newCard => {
@@ -96,13 +98,12 @@ function handleUpdateUser({name, about}) {
       closeAllPopups();
     }).catch(error => {
       console.log('Ошибка при добавлении карточки:', error);
-    });
-  }
+  });
+}
 
   function handleCardClick(card) {
     setselectedCard(card);
-  }
-
+}
 
   function checkToken() {
     const jwt = localStorage.getItem('jwt')
@@ -113,37 +114,66 @@ function handleUpdateUser({name, about}) {
       }
       setLoggedIn(true)
       navigate('/')
+      setEmail(data.data.email)
     })
     .catch(error => {
       console.log('Ошибка при проверке токена:', error);
-    });
+  });
+}
+
+  function handleSignOut() {
+    localStorage.removeItem('jwt');
+    navigate('/sign-in');
+    setLoggedIn(false)
   }
 
+  const handleLogin = (email, password) => {
+    auth.authorize(email, password).then((data) => {
+      localStorage.setItem('jwt', data.token)
+      setLoggedIn(true)
+      navigate('/')
+    }).catch((error) => {
+      setAuthData(false)
+      setPopupAuthText('Что-то пошло не так! Попробуйте еще раз.')
+      handleAuth()
+      console.log('Произошла ошибка при входе:', error);
+  });
+}
+
+  const handleRegister = (email, password) => {
+    handleAuth()
+    auth.register(email, password).then(() => {
+      setAuthData(true)
+      setPopupAuthText("Вы успешно зарегистрировались!")
+      navigate('/sign-in')
+    }).catch((error) => {
+      setAuthData(false)
+      setPopupAuthText('Что-то пошло не так! Попробуйте еще раз.')
+      console.log('Произошла ошибка при регистрации:', error);
+  });
+  }
 
   React.useEffect(() => {
     if (currentUrl === '/') {
       checkToken();
     }
-  }, [currentUrl])
-
-
+}, [currentUrl])
 
   function handleEditAvatarClick() {
     setEditAvatarPopupOpen(true);
-  }
+}
 
   function handleEditProfileClick() {
     setEditProfilePopupOpen(true);
-  }
+}
 
   function handleAddPlaceClick() {
     setAddPlacePopupOpen(true);
-  }
+}
 
-  function handleRegister() {
+  function handleAuth() {
     setInfoTooltip(true);
-  }
-
+}
 
   const closeAllPopups = () => {
     setEditProfilePopupOpen(false);
@@ -151,7 +181,7 @@ function handleUpdateUser({name, about}) {
     setEditAvatarPopupOpen(false);
     setInfoTooltip(false);
     setselectedCard(null)
-  };
+};
 
   return (
       <CurrentUserContext.Provider value={ currentUser }>
@@ -191,10 +221,11 @@ function handleUpdateUser({name, about}) {
             onClose={closeAllPopups}
             isOpen={isInfoTooltip}
             authData={authData}
+            popupAuthText={popupAuthText}
           />
 
           <div className="page__wrapper">
-            <Header isLoggedIn={isLoggedIn} handleLoggedin={setLoggedIn} />
+            <Header email={email} isLoggedIn={isLoggedIn} onSignOut={handleSignOut} />
 
               <Routes>
                 <Route path='*' element={ isLoggedIn ? <Navigate to="/" /> : <Navigate to="/sign-in" />} />
@@ -210,12 +241,11 @@ function handleUpdateUser({name, about}) {
                 onCardLike={handleCardLike}
                 onCardDelete={handleCardDelete} /> } />
 
-                <Route path="/sign-up" element={<Register handleSignupData={setAuthData} handleSignup={handleRegister} />} />
-                <Route path="/sign-in" element={<Login handleSignupData={setAuthData} handleLoginPopup={handleRegister} handleLogin={() => setLoggedIn(true)} />} />
+                <Route path="/sign-up" element={<Register onRegister={handleRegister} />} />
+                <Route path="/sign-in" element={<Login onLogin={handleLogin} />} />
               </Routes>
 
             <Footer />
-
 
           </div>
         </div>

@@ -1,16 +1,14 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import * as auth from '../utils/auth'
 
-
-export default function Login( { handleLogin, handleLoginPopup, handleSignupData }) {
+export default function Login( { onLogin }) {
 
   const navigate = useNavigate()
 
   const [formValue, setFormValue] = React.useState({
     email: '',
     password: ''
-  })
+})
 
   const handleChange = (e) => {
     const {name, value} = e.target;
@@ -18,24 +16,15 @@ export default function Login( { handleLogin, handleLoginPopup, handleSignupData
     setFormValue({
       ...formValue,
       [name]: value
-    });
-  }
+  });
+}
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const { email, password } = formValue;
-    auth.authorize(email, password).then((data) => {
-      localStorage.setItem('jwt', data.token)
-      handleLogin()
-      navigate('/')
-    }).catch((error) => {
-      handleSignupData(false)
-      handleLoginPopup()
-      console.log('Произошла ошибка при входе:', error);
-    });
+    onLogin(email, password)
 
-  }
-
+}
 
   return (
     <main className='auth'>
@@ -44,11 +33,13 @@ export default function Login( { handleLogin, handleLoginPopup, handleSignupData
         <input className='auth__input'
           id="email"
           name="email"
+          type="email"
           value={formValue.email}
           placeholder='Email'
           onChange={handleChange}
         />
         <input className='auth__input'
+          type='password'
           id="password"
           name="password"
           value={formValue.password}

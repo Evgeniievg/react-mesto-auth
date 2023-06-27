@@ -1,10 +1,7 @@
 import React from 'react'
-import * as auth from '../utils/auth'
 import { useNavigate, Link } from 'react-router-dom'
 
-
-export default function Register( {handleSignup, handleSignupData} ) {
-
+export default function Register( { onRegister } ) {
 
   const navigate = useNavigate()
   const [formValue, setFormValue] = React.useState({
@@ -18,19 +15,15 @@ export default function Register( {handleSignup, handleSignupData} ) {
     setFormValue({
       ...formValue,
       [name]: value
-    });
-  }
+  });
+}
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    handleSignup(true)
     const { email, password } = formValue;
-    auth.register(email, password).then(() => {
-      handleSignupData(true)
-      navigate('/sign-in')
-    }).catch((error) => {
-      console.log('Произошла ошибка при регистрации:', error);
-    });
-  }
+    onRegister(email, password)
+
+}
 
   return (
       <main className='auth'>
